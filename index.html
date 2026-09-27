@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1d4938" />
+    <meta name="description" content="Bean Notes is a private tasting journal for the coffee beans you love." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bean Notes" />
+    <title>Bean Notes — Coffee tasting journal</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <a class="brand" href="#" aria-label="Bean Notes home">
+          <img class="brand-mark" src="icons/icon-192.png" alt="" />
+          <span>Bean Notes</span>
+        </a>
+        <nav class="header-actions" aria-label="Primary navigation">
+          <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
+          </button>
+          <button class="button button-primary" id="addReviewButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add a bean
+          </button>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="pageTitle">
+          <div class="hero-copy">
+            <p class="eyebrow"><span></span> Your coffee archive</p>
+            <h1 id="pageTitle">Every bean has<br /><em>a story.</em></h1>
+            <p class="hero-description">Keep the bags you loved, the flavors you found, and the brews worth making again.</p>
+          </div>
+          <aside class="hero-quote" aria-label="Journal note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17h3l2-5V7H6v5h3l-2 5Zm9 0h3l2-5V7h-6v5h3l-2 5Z"/></svg>
+            <blockquote>Good coffee is a language in itself.</blockquote>
+            <p>— Jackie Chan</p>
+          </aside>
+        </section>
+
+        <section class="journal" aria-labelledby="journalTitle">
+          <div class="journal-heading">
+            <div>
+              <p class="section-kicker">Tasting journal</p>
+              <h2 id="journalTitle">Your beans <span id="beanCount">0</span></h2>
+            </div>
+            <div class="toolbar">
+              <label class="search-box">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+                <span class="sr-only">Search beans</span>
+                <input id="searchInput" type="search" placeholder="Search your journal" autocomplete="off" />
+              </label>
+              <label class="select-wrap">
+                <span class="sr-only">Sort reviews</span>
+                <select id="sortSelect">
+                  <option value="newest">Newest first</option>
+                  <option value="rating">Highest rated</option>
+                  <option value="name">Name A–Z</option>
+                </select>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+              </label>
+            </div>
+          </div>
+
+          <div class="filter-row" id="filterRow" aria-label="Filter by tasting note">
+            <button class="filter-pill active" type="button" data-filter="all">All beans</button>
+          </div>
+
+          <div class="bean-grid" id="beanGrid" aria-live="polite"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 120 120"><path d="M36 30h46l-4 65H40l-4-65Z"/><path d="M32 30h54M45 46c7 5 20 5 28 0M55 61c7-5 16 2 12 10-4 8-15 13-18 5-2-5 2-11 6-15Z"/></svg>
+            </div>
+            <h3 id="emptyTitle">Your journal is waiting</h3>
+            <p id="emptyMessage">Add the first bag you want to remember.</p>
+            <button class="button button-primary" id="emptyAddButton" type="button">Add your first bean</button>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>Made for slow mornings and memorable cups.</p>
+        <p>Your journal stays on this device.</p>
+      </footer>
+    </div>
+
+    <dialog class="review-dialog" id="reviewDialog">
+      <form id="reviewForm" method="dialog" novalidate>
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">Tasting entry</p>
+            <h2 id="dialogTitle">Add a new bean</h2>
+          </div>
+          <button class="icon-button close-button" id="closeDialogButton" type="button" aria-label="Close dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+
+        <div class="dialog-scroll">
+          <div class="photo-field" id="photoField">
+            <input id="photoInput" type="file" accept="image/*" />
+            <div class="photo-placeholder" id="photoPlaceholder">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m5 17 4-4 3 3 2-2 5 3"/></svg>
+              <span>Add a photo of the bag</span>
+              <small>JPG, PNG or WebP · max 4 MB</small>
+            </div>
+            <img id="photoPreview" alt="Coffee bag preview" hidden />
+            <div class="photo-actions" id="photoActions" hidden>
+              <button type="button" id="changePhotoButton">Change</button>
+              <button type="button" id="removePhotoButton">Remove</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label class="form-field form-field-wide">
+              <span>Bean or blend name <b>*</b></span>
+              <input id="nameInput" name="name" type="text" placeholder="e.g. Worka Sakaro" maxlength="70" required />
+              <small class="field-error" id="nameError"></small>
+            </label>
+            <label class="form-field">
+              <span>Roaster</span>
+              <input id="roasterInput" name="roaster" type="text" placeholder="e.g. Onyx Coffee Lab" maxlength="60" />
+            </label>
+            <label class="form-field">
+              <span>Origin</span>
+              <input id="originInput" name="origin" type="text" placeholder="e.g. Ethiopia" maxlength="60" />
+            </label>
+            <label class="form-field">
+              <span>Process</span>
+              <select id="processInput" name="process">
+                <option value="">Choose process</option>
+                <option>Washed</option>
+                <option>Natural</option>
+                <option>Honey</option>
+                <option>Anaerobic</option>
+                <option>Wet-hulled</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Brew method</span>
+              <select id="brewInput" name="brew">
+                <option value="">Choose method</option>
+                <option>V60</option>
+                <option>Espresso</option>
+                <option>Aeropress</option>
+                <option>French press</option>
+                <option>Chemex</option>
+                <option>Cold brew</option>
+                <option>Other</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="taste-fieldset">
+            <legend>Tasting notes</legend>
+            <p>Pick a few or add your own.</p>
+            <div class="suggested-notes" id="suggestedNotes">
+              <button type="button" data-note="Chocolate">Chocolate</button>
+              <button type="button" data-note="Caramel">Caramel</button>
+              <button type="button" data-note="Citrus">Citrus</button>
+              <button type="button" data-note="Berry">Berry</button>
+              <button type="button" data-note="Floral">Floral</button>
+              <button type="button" data-note="Nutty">Nutty</button>
+              <button type="button" data-note="Stone fruit">Stone fruit</button>
+              <button type="button" data-note="Spice">Spice</button>
+            </div>
+            <div class="custom-note-row">
+              <input id="customNoteInput" type="text" placeholder="Add another note" maxlength="24" />
+              <button id="addNoteButton" type="button">Add</button>
+            </div>
+            <div class="selected-notes" id="selectedNotes" aria-live="polite"></div>
+          </fieldset>
+
+          <label class="form-field notes-field">
+            <span>Your notes</span>
+            <textarea id="notesInput" name="notes" rows="4" placeholder="How did it taste? What stood out? Would you brew it differently next time?" maxlength="600"></textarea>
+            <small><span id="notesCount">0</span>/600</small>
+          </label>
+
+          <fieldset class="rating-fieldset">
+            <legend>Your rating <b>*</b></legend>
+            <div class="rating-row">
+              <div class="rating-buttons" id="ratingButtons" aria-label="Select a rating out of 5">
+                <button type="button" data-rating="1" aria-label="1 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+                <button type="button" data-rating="2" aria-label="2 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+                <button type="button" data-rating="3" aria-label="3 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+                <button type="button" data-rating="4" aria-label="4 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+                <button type="button" data-rating="5" aria-label="5 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+              </div>
+              <span class="rating-label" id="ratingLabel">Choose a rating</span>
+            </div>
+            <small class="field-error" id="ratingError"></small>
+          </fieldset>
+        </div>
+
+        <div class="dialog-footer">
+          <button class="button button-secondary" id="cancelButton" type="button">Cancel</button>
+          <button class="button button-primary" type="submit">Save to journal</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="confirm-dialog" id="confirmDialog">
+      <div class="confirm-content">
+        <div class="warning-icon"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><path d="M10.3 3.7 2.5 17.2A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.8L13.7 3.7a2 2 0 0 0-3.4 0Z"/></svg></div>
+        <h2>Remove this bean?</h2>
+        <p>This review will be permanently removed from your journal.</p>
+        <div class="confirm-actions">
+          <button class="button button-secondary" id="keepButton" type="button">Keep it</button>
+          <button class="button button-danger" id="confirmDeleteButton" type="button">Remove bean</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+      <span id="toastMessage">Saved to your journal</span>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
