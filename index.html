@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=6" />
   </head>
   <body>
     <div class="app-shell">
@@ -25,6 +25,10 @@
           <span>Bean Notes</span>
         </a>
         <nav class="header-actions" aria-label="Primary navigation">
+          <button class="icon-button sync-button" id="cloudSyncButton" type="button" aria-label="Cloud sync" title="Cloud sync">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5h9a4.5 4.5 0 0 0 .7-8.9A6 6 0 0 0 5.8 8.2 4.3 4.3 0 0 0 7.5 18.5Z"/><path d="m9.5 14 2.5 2.5 3.5-4"/></svg>
+            <span class="sync-dot" id="syncDot" aria-hidden="true"></span>
+          </button>
           <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
             <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
           </button>
@@ -36,6 +40,7 @@
       </header>
 
       <main>
+        <div id="homeView">
         <section class="hero" aria-labelledby="pageTitle">
           <div class="hero-copy">
             <p class="eyebrow"><span></span> Your coffee archive</p>
@@ -86,6 +91,42 @@
             <h3 id="emptyTitle">Your journal is waiting</h3>
             <p id="emptyMessage">Add the first bag you want to remember.</p>
             <button class="button button-primary" id="emptyAddButton" type="button">Add your first bean</button>
+          </div>
+        </section>
+        </div>
+
+        <section class="bean-detail" id="beanDetailView" aria-labelledby="detailName" hidden>
+          <button class="detail-back" id="detailBackButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            Back to your beans
+          </button>
+
+          <div class="detail-layout">
+            <div class="detail-media" id="detailMedia"></div>
+            <article class="detail-content">
+              <p class="section-kicker" id="detailMeta">Coffee review</p>
+              <div class="detail-title-row">
+                <h1 id="detailName" tabindex="-1">Bean name</h1>
+                <span class="detail-rating" id="detailRating"></span>
+              </div>
+              <div class="detail-facts" id="detailFacts"></div>
+
+              <section class="detail-section" aria-labelledby="detailTastingTitle">
+                <h2 id="detailTastingTitle">Tasting notes</h2>
+                <div class="detail-tastes" id="detailTastingNotes"></div>
+              </section>
+
+              <section class="detail-section detail-notes-section" aria-labelledby="detailNotesTitle">
+                <h2 id="detailNotesTitle">Journal notes</h2>
+                <p id="detailNotes"></p>
+              </section>
+
+              <p class="detail-date" id="detailDate"></p>
+              <div class="detail-actions">
+                <button class="button button-primary" id="detailEditButton" type="button">Edit this bean</button>
+                <button class="button button-secondary detail-delete" id="detailDeleteButton" type="button">Remove</button>
+              </div>
+            </article>
           </div>
         </section>
       </main>
@@ -225,11 +266,80 @@
       </div>
     </dialog>
 
+    <dialog class="cloud-dialog" id="cloudDialog">
+      <div class="dialog-header">
+        <div>
+          <p class="section-kicker">Private backup</p>
+          <h2>Cloud sync</h2>
+        </div>
+        <button class="icon-button close-button" id="closeCloudButton" type="button" aria-label="Close cloud sync">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="cloud-content">
+        <section class="cloud-state" id="cloudSetupState">
+          <div class="cloud-illustration" aria-hidden="true">
+            <svg viewBox="0 0 48 48"><path d="M14 36h20a9 9 0 0 0 1.3-17.9A12 12 0 0 0 12.5 15 8.5 8.5 0 0 0 14 36Z"/><path d="M24 22v9M20.5 25.5 24 22l3.5 3.5"/></svg>
+          </div>
+          <h3>Cloud connection is ready to configure</h3>
+          <p>Your journal still works locally. Connect the Supabase project to enable private backup and multi-device sync.</p>
+          <div class="privacy-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            Each account can only access its own reviews and photos.
+          </div>
+        </section>
+
+        <section class="cloud-state" id="cloudSignedOutState" hidden>
+          <div class="cloud-illustration small" aria-hidden="true">
+            <svg viewBox="0 0 48 48"><path d="M14 36h20a9 9 0 0 0 1.3-17.9A12 12 0 0 0 12.5 15 8.5 8.5 0 0 0 14 36Z"/><path d="m20 26 4 4 6-7"/></svg>
+          </div>
+          <h3>Take your journal everywhere</h3>
+          <p>Enter your email and we’ll send a secure sign-in link. No password needed.</p>
+          <form class="cloud-form" id="cloudSignInForm">
+            <label class="form-field">
+              <span>Email address</span>
+              <input id="cloudEmailInput" type="email" placeholder="you@example.com" autocomplete="email" required />
+            </label>
+            <button class="button button-primary" id="cloudEmailButton" type="submit">Email me a sign-in link</button>
+          </form>
+          <p class="cloud-message" id="cloudAuthMessage" aria-live="polite"></p>
+        </section>
+
+        <section class="cloud-state" id="cloudSignedInState" hidden>
+          <div class="account-card">
+            <div class="account-avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+            </div>
+            <div>
+              <small>Signed in as</small>
+              <strong id="cloudAccountEmail">—</strong>
+            </div>
+            <span class="account-status">Connected</span>
+          </div>
+          <div class="sync-summary">
+            <div>
+              <span>Sync status</span>
+              <strong id="cloudStatusText">Ready</strong>
+            </div>
+            <div>
+              <span>Last synced</span>
+              <strong id="cloudLastSynced">Not yet</strong>
+            </div>
+          </div>
+          <button class="button button-primary cloud-sync-now" id="cloudSyncNowButton" type="button">Sync now</button>
+          <button class="text-button" id="cloudSignOutButton" type="button">Sign out on this device</button>
+        </section>
+      </div>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
       <span id="toastMessage">Saved to your journal</span>
     </div>
 
-    <script src="app.js"></script>
+    <script src="cloud-config.js?v=2"></script>
+    <script src="app.js?v=7"></script>
+    <script type="module" src="cloud.js?v=2"></script>
   </body>
 </html>

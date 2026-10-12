@@ -62,6 +62,16 @@ let toastTimer = null;
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
+  homeView: $("#homeView"),
+  detailView: $("#beanDetailView"),
+  detailMedia: $("#detailMedia"),
+  detailMeta: $("#detailMeta"),
+  detailName: $("#detailName"),
+  detailRating: $("#detailRating"),
+  detailFacts: $("#detailFacts"),
+  detailTastingNotes: $("#detailTastingNotes"),
+  detailNotes: $("#detailNotes"),
+  detailDate: $("#detailDate"),
   beanGrid: $("#beanGrid"),
   beanCount: $("#beanCount"),
   emptyState: $("#emptyState"),
@@ -113,6 +123,10 @@ function saveReviews() {
   }
 }
 
+function announceCloudChange() {
+  window.dispatchEvent(new CustomEvent("bean-notes:changed"));
+}
+
 function escapeHtml(value = "") {
   return value.replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 }
@@ -137,7 +151,7 @@ function renderCard(review, index) {
     ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee bag" />`
     : beanIllustration(review.color || "#d9a56f");
 
-  return `<article class="bean-card" data-id="${review.id}" style="animation-delay:${index * 50}ms">
+  return `<article class="bean-card" data-id="${escapeHtml(review.id)}" tabindex="0" role="link" aria-label="Open review for ${escapeHtml(review.name)}" style="animation-delay:${index * 50}ms">
     <div class="card-image">
       ${photo}
       <button class="card-menu-button" type="button" aria-label="Options for ${escapeHtml(review.name)}" data-action="menu">
@@ -160,6 +174,68 @@ function renderCard(review, index) {
       <p class="card-date">Tasted ${date}${review.sample ? " · Sample entry" : ""}</p>
     </div>
   </article>`;
+}
+
+function getDetailReviewId() {
+  if (!location.hash.startsWith("#bean/")) return "";
+  try { return decodeURIComponent(location.hash.slice(6)); }
+  catch { return ""; }
+}
+
+function openDetail(reviewId) {
+  closeAllMenus();
+  location.hash = `bean/${encodeURIComponent(reviewId)}`;
+}
+
+function renderDetail(review) {
+  const meta = [review.roaster, review.origin].filter(Boolean).join(" · ") || "Personal tasting";
+  const facts = [
+    ["Roaster", review.roaster],
+    ["Origin", review.origin],
+    ["Process", review.process],
+    ["Brew method", review.brew]
+  ];
+  const tasted = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(review.createdAt));
+
+  elements.detailMedia.innerHTML = review.photo
+    ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee bag" />`
+    : beanIllustration(review.color || "#d9a56f");
+  elements.detailMeta.textContent = meta;
+  elements.detailName.textContent = review.name;
+  elements.detailRating.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg>${Number(review.rating).toFixed(1)}`;
+  elements.detailFacts.innerHTML = facts.map(([label, value]) => `
+    <div class="detail-fact">
+      <span>${label}</span>
+      <strong>${escapeHtml(value || "Not recorded")}</strong>
+    </div>`).join("");
+  elements.detailTastingNotes.innerHTML = review.tastingNotes.length
+    ? review.tastingNotes.map(note => `<span class="taste-tag">${escapeHtml(note)}</span>`).join("")
+    : `<p class="detail-empty">No tasting notes recorded yet.</p>`;
+  elements.detailNotes.textContent = review.notes || "No journal notes yet.";
+  elements.detailNotes.classList.toggle("detail-empty", !review.notes);
+  elements.detailDate.textContent = `Tasted ${tasted}${review.sample ? " · Sample entry" : ""}`;
+}
+
+function renderRoute({ moveFocus = false } = {}) {
+  const reviewId = getDetailReviewId();
+  const review = reviewId ? reviews.find(item => item.id === reviewId) : null;
+
+  if (reviewId && !review) {
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+  }
+
+  const showDetail = Boolean(review);
+  elements.homeView.hidden = showDetail;
+  elements.detailView.hidden = !showDetail;
+  document.title = showDetail ? `${review.name} — Bean Notes` : "Bean Notes — Coffee tasting journal";
+
+  if (showDetail) {
+    renderDetail(review);
+    if (moveFocus) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      setTimeout(() => elements.detailName.focus({ preventScroll: true }), 0);
+    }
+  }
 }
 
 function render() {
@@ -191,6 +267,7 @@ function render() {
   }
 
   renderFilters();
+  renderRoute();
 }
 
 function renderFilters() {
@@ -321,7 +398,7 @@ function submitReview(event) {
 
   const existing = reviews.find(review => review.id === editingId);
   const review = {
-    id: editingId || `bean-${Date.now()}`,
+    id: editingId || (crypto.randomUUID ? crypto.randomUUID() : `bean-${Date.now()}`),
     name: elements.nameInput.value.trim(),
     roaster: elements.roasterInput.value.trim(),
     origin: elements.originInput.value.trim(),
@@ -331,8 +408,10 @@ function submitReview(event) {
     notes: elements.notesInput.value.trim(),
     rating: Number(selectedRating),
     photo: currentPhoto,
+    photoPath: currentPhoto ? (existing?.photoPath || "") : "",
     color: existing?.color || ["#d9a56f", "#c98769", "#aab58b", "#d0b875", "#91aca0"][reviews.length % 5],
     createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     sample: false
   };
 
@@ -340,6 +419,7 @@ function submitReview(event) {
   saveReviews();
   closeReviewDialog();
   render();
+  announceCloudChange();
   showToast(editingId ? "Review updated" : "Saved to your journal");
 }
 
@@ -379,8 +459,34 @@ document.addEventListener("click", event => {
   }
 });
 
+elements.beanGrid.addEventListener("click", event => {
+  if (event.target.closest("[data-action]")) return;
+  const card = event.target.closest(".bean-card");
+  if (card) openDetail(card.dataset.id);
+});
+
+elements.beanGrid.addEventListener("keydown", event => {
+  if (event.target.closest("[data-action]")) return;
+  const card = event.target.closest(".bean-card");
+  if (card && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    openDetail(card.dataset.id);
+  }
+});
+
 $("#addReviewButton").addEventListener("click", () => openReviewDialog());
 $("#emptyAddButton").addEventListener("click", () => openReviewDialog());
+$("#detailBackButton").addEventListener("click", () => { location.hash = ""; });
+$("#detailEditButton").addEventListener("click", () => {
+  const review = reviews.find(item => item.id === getDetailReviewId());
+  if (review) openReviewDialog(review);
+});
+$("#detailDeleteButton").addEventListener("click", () => {
+  const review = reviews.find(item => item.id === getDetailReviewId());
+  if (!review) return;
+  deletingId = review.id;
+  elements.confirmDialog.showModal();
+});
 $("#closeDialogButton").addEventListener("click", closeReviewDialog);
 $("#cancelButton").addEventListener("click", closeReviewDialog);
 elements.form.addEventListener("submit", submitReview);
@@ -436,6 +542,12 @@ elements.filterRow.addEventListener("click", event => {
 
 $("#keepButton").addEventListener("click", () => elements.confirmDialog.close());
 $("#confirmDeleteButton").addEventListener("click", () => {
+  const review = reviews.find(item => item.id === deletingId);
+  if (review && !review.sample) {
+    window.dispatchEvent(new CustomEvent("bean-notes:review-deleted", {
+      detail: { id: review.id, photoPath: review.photoPath || "" }
+    }));
+  }
   reviews = reviews.filter(review => review.id !== deletingId);
   saveReviews();
   elements.confirmDialog.close();
@@ -457,7 +569,18 @@ $("#themeToggle").addEventListener("click", () => {
 
 const savedTheme = localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
 if (savedTheme === "dark") document.body.classList.add("dark");
+window.addEventListener("hashchange", () => renderRoute({ moveFocus: true }));
 render();
+
+window.BeanNotesApp = {
+  getReviews: () => reviews.map(review => ({ ...review, tastingNotes: [...review.tastingNotes] })),
+  replaceReviews: nextReviews => {
+    reviews = nextReviews;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    render();
+  },
+  showToast
+};
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
