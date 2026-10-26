@@ -1,10 +1,10 @@
-const CACHE_NAME = "bean-notes-shell-v10";
+const CACHE_NAME = "bean-notes-shell-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css?v=10",
   "./app.js?v=10",
-  "./cloud-config.js?v=2",
+  "./cloud-config.js?v=3",
   "./cloud.js?v=10",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
