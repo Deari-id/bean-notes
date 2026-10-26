@@ -88,6 +88,7 @@ function toCloudRow(review, userId) {
     tasting_notes: review.tastingNotes || [],
     notes: review.notes || "",
     rating: Number(review.rating),
+    favorite_rating: review.favoriteRating == null ? null : Number(review.favoriteRating),
     photo_path: review.photoPath || null,
     color: review.color || "#d9a56f",
     created_at: review.createdAt,
@@ -106,6 +107,7 @@ function fromCloudRow(row, photo = "") {
     tastingNotes: row.tasting_notes || [],
     notes: row.notes || "",
     rating: Number(row.rating),
+    favoriteRating: row.favorite_rating == null ? null : Number(row.favorite_rating),
     photo,
     photoPath: row.photo_path || "",
     color: row.color || "#d9a56f",
@@ -223,7 +225,10 @@ async function syncNow({ quiet = false } = {}) {
   } catch (error) {
     console.error("Bean Notes sync failed", error);
     setStatus("error", "Sync needs attention");
-    if (!quiet) app.showToast(error.message || "Cloud sync failed");
+    const message = /favorite_rating/i.test(error.message || "")
+      ? "Cloud update needed: add the Favorite rating column in Supabase. Your reviews remain on this device."
+      : (error.message || "Cloud sync failed");
+    if (!quiet) app.showToast(message);
   } finally {
     syncInProgress = false;
     ui.syncNow.disabled = false;
@@ -285,13 +290,31 @@ ui.form.addEventListener("submit", async event => {
   if (!client) return;
   ui.emailButton.disabled = true;
   ui.authMessage.textContent = "Sending your secure link…";
-  const redirectTo = `${location.origin}${location.pathname}`;
-  const { error } = await client.auth.signInWithOtp({
-    email: ui.email.value.trim(),
-    options: { emailRedirectTo: redirectTo }
-  });
-  ui.emailButton.disabled = false;
-  ui.authMessage.textContent = error ? error.message : "Check your email, then open the sign-in link on this device.";
+  try {
+    if (location.protocol === "file:") {
+      ui.authMessage.textContent = "Sign-in links require the published HTTPS app. Open Bean Notes in Safari or Chrome, then try again.";
+      return;
+    }
+    const redirectTo = `${location.origin}${location.pathname}`;
+    const { error } = await client.auth.signInWithOtp({
+      email: ui.email.value.trim(),
+      options: { emailRedirectTo: redirectTo }
+    });
+    if (error) throw error;
+    ui.authMessage.textContent = "Check your email, then open the sign-in link on this device.";
+  } catch (error) {
+    console.error("Bean Notes sign-in failed", error);
+    const message = error.message || "";
+    ui.authMessage.textContent = /invalid api key|unauthorized_invalid_api_key/i.test(message)
+      ? "Cloud setup needs a valid Supabase publishable key. Your reviews remain saved on this device."
+      : /load failed|failed to fetch|network|fetch failed/i.test(message)
+        ? "The browser could not reach Supabase. Open the published app in Safari or Chrome, check your connection, and try again."
+        : /rate.limit|too many requests|email rate/i.test(message)
+          ? "Too many sign-in attempts. Please wait a little before trying again."
+          : message || "Could not send the sign-in link. Please try again.";
+  } finally {
+    ui.emailButton.disabled = false;
+  }
 });
 
 ui.syncNow.addEventListener("click", () => syncNow());

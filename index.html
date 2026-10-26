@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=10" />
   </head>
   <body>
     <div class="app-shell">
@@ -70,7 +70,8 @@
                 <span class="sr-only">Sort reviews</span>
                 <select id="sortSelect">
                   <option value="newest">Newest first</option>
-                  <option value="rating">Highest rated</option>
+                  <option value="rating">Highest taste</option>
+                  <option value="favorite">Most favorite</option>
                   <option value="name">Name A–Z</option>
                 </select>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
@@ -107,8 +108,8 @@
               <p class="section-kicker" id="detailMeta">Coffee review</p>
               <div class="detail-title-row">
                 <h1 id="detailName" tabindex="-1">Bean name</h1>
-                <span class="detail-rating" id="detailRating"></span>
               </div>
+              <div class="detail-ratings" id="detailRatings"></div>
               <div class="detail-facts" id="detailFacts"></div>
 
               <section class="detail-section" aria-labelledby="detailTastingTitle">
@@ -231,20 +232,26 @@
             <small><span id="notesCount">0</span>/600</small>
           </label>
 
-          <fieldset class="rating-fieldset">
-            <legend>Your rating <b>*</b></legend>
-            <div class="rating-row">
-              <div class="rating-buttons" id="ratingButtons" aria-label="Select a rating out of 5">
-                <button type="button" data-rating="1" aria-label="1 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
-                <button type="button" data-rating="2" aria-label="2 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
-                <button type="button" data-rating="3" aria-label="3 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
-                <button type="button" data-rating="4" aria-label="4 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
-                <button type="button" data-rating="5" aria-label="5 out of 5"><svg viewBox="0 0 24 24"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg></button>
+          <div class="rating-fields">
+            <fieldset class="rating-fieldset">
+              <legend>Taste <b>*</b></legend>
+              <p>How does it taste in the cup?</p>
+              <div class="rating-row">
+                <div class="rating-buttons" id="tasteRatingButtons" aria-label="Taste rating in half-star steps"></div>
+                <span class="rating-label" id="tasteRatingLabel">Choose a rating</span>
               </div>
-              <span class="rating-label" id="ratingLabel">Choose a rating</span>
-            </div>
-            <small class="field-error" id="ratingError"></small>
-          </fieldset>
+              <small class="field-error" id="tasteRatingError"></small>
+            </fieldset>
+            <fieldset class="rating-fieldset">
+              <legend>Favorite <b>*</b></legend>
+              <p>How likely are you to choose it again?</p>
+              <div class="rating-row">
+                <div class="rating-buttons" id="favoriteRatingButtons" aria-label="Favorite rating in half-star steps"></div>
+                <span class="rating-label" id="favoriteRatingLabel">Choose a rating</span>
+              </div>
+              <small class="field-error" id="favoriteRatingError"></small>
+            </fieldset>
+          </div>
         </div>
 
         <div class="dialog-footer">
@@ -304,6 +311,7 @@
             <button class="button button-primary" id="cloudEmailButton" type="submit">Email me a sign-in link</button>
           </form>
           <p class="cloud-message" id="cloudAuthMessage" aria-live="polite"></p>
+          <p class="cloud-help">If sign-in fails, check the Supabase publishable key and open the published app in Safari or Chrome.</p>
         </section>
 
         <section class="cloud-state" id="cloudSignedInState" hidden>
@@ -338,8 +346,8 @@
       <span id="toastMessage">Saved to your journal</span>
     </div>
 
-    <script src="cloud-config.js?v=2"></script>
-    <script src="app.js?v=7"></script>
-    <script type="module" src="cloud.js?v=2"></script>
+    <script src="cloud-config.js?v=3"></script>
+    <script src="app.js?v=10"></script>
+    <script type="module" src="cloud.js?v=10"></script>
   </body>
 </html>

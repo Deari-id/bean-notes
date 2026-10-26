@@ -1,6 +1,6 @@
 # Bean Notes
 
-An installable, offline-capable coffee tasting journal. Add a photo of each bag, record the bean or blend name, roaster, origin, process, brew method, tasting notes, freeform notes, and a five-star rating.
+An installable, offline-capable coffee tasting journal. Add a photo of each bag, record the bean or blend name, roaster, origin, process, brew method, tasting notes, freeform notes, and separate Taste and Favorite ratings in half-star steps.
 
 ## Run it
 
@@ -34,3 +34,7 @@ Bean Notes includes an offline-first Supabase synchronization layer. Until confi
 5. Copy the project URL and **publishable** key into `cloud-config.js`.
 
 The publishable key is designed for frontend use when Row Level Security is enabled. Never put a secret key or service-role key in this repository.
+
+If the Supabase table already exists, run `supabase/migrations/20261026_dual_ratings.sql` in the SQL Editor before publishing the dual-rating app. Older reviews retain their Taste score and show Favorite as unrated until you edit them.
+
+Sign-in links need the published HTTPS app, not a local `file://` copy. If you see “Load failed”, first verify that `cloud-config.js` contains the current Supabase publishable key, then open the published app in Safari or Chrome and try again. If the request succeeds but no email arrives, check the Supabase Auth email settings and spam folder; Supabase's default email service has recipient and rate limits, so a custom SMTP service may be needed.

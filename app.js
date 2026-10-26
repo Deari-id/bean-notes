@@ -13,7 +13,8 @@ const seedReviews = [
     brew: "V60",
     tastingNotes: ["Bergamot", "Peach", "Jasmine"],
     notes: "Bright and tea-like, with a soft peach sweetness as it cools. Beautiful on a slower pour.",
-    rating: 4.8,
+    rating: 5,
+    favoriteRating: 4.5,
     photo: "",
     color: "#d9a56f",
     createdAt: "2026-08-30T08:20:00.000Z",
@@ -29,6 +30,7 @@ const seedReviews = [
     tastingNotes: ["Cacao", "Cherry", "Brown sugar"],
     notes: "Round and jammy with a cocoa finish. Very forgiving and sweet, even at a stronger ratio.",
     rating: 4.5,
+    favoriteRating: 4,
     photo: "",
     color: "#c98769",
     createdAt: "2026-08-24T07:15:00.000Z",
@@ -43,7 +45,8 @@ const seedReviews = [
     brew: "V60",
     tastingNotes: ["Pineapple", "Spice", "Molasses"],
     notes: "A syrupy cup with tropical acidity and a warm, spiced finish. Best once it has rested for two weeks.",
-    rating: 4.2,
+    rating: 4,
+    favoriteRating: 4.5,
     photo: "",
     color: "#aab58b",
     createdAt: "2026-08-17T09:45:00.000Z",
@@ -53,7 +56,7 @@ const seedReviews = [
 
 let reviews = loadReviews();
 let selectedNotes = [];
-let selectedRating = 0;
+let selectedRatings = { taste: 0, favorite: 0 };
 let currentPhoto = "";
 let editingId = null;
 let deletingId = null;
@@ -67,7 +70,7 @@ const elements = {
   detailMedia: $("#detailMedia"),
   detailMeta: $("#detailMeta"),
   detailName: $("#detailName"),
-  detailRating: $("#detailRating"),
+  detailRatings: $("#detailRatings"),
   detailFacts: $("#detailFacts"),
   detailTastingNotes: $("#detailTastingNotes"),
   detailNotes: $("#detailNotes"),
@@ -98,9 +101,13 @@ const elements = {
   selectedNotes: $("#selectedNotes"),
   notesInput: $("#notesInput"),
   notesCount: $("#notesCount"),
-  ratingLabel: $("#ratingLabel"),
+  tasteRatingButtons: $("#tasteRatingButtons"),
+  favoriteRatingButtons: $("#favoriteRatingButtons"),
+  tasteRatingLabel: $("#tasteRatingLabel"),
+  favoriteRatingLabel: $("#favoriteRatingLabel"),
   nameError: $("#nameError"),
-  ratingError: $("#ratingError"),
+  tasteRatingError: $("#tasteRatingError"),
+  favoriteRatingError: $("#favoriteRatingError"),
   toast: $("#toast"),
   toastMessage: $("#toastMessage")
 };
@@ -143,6 +150,17 @@ function beanIllustration(color) {
   </div>`;
 }
 
+const starPath = "m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z";
+
+function ratingBadges(review, className = "rating-badges") {
+  const favorite = review.favoriteRating == null ? "—" : Number(review.favoriteRating).toFixed(1);
+  const favoriteLabel = review.favoriteRating == null ? "Favorite not rated" : `Favorite ${favorite} out of 5`;
+  return `<div class="${className}" aria-label="Taste ${Number(review.rating).toFixed(1)} out of 5; ${favoriteLabel}">
+    <span class="rating-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${starPath}"/></svg> Taste ${Number(review.rating).toFixed(1)}</span>
+    <span class="rating-badge rating-badge-favorite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${starPath}"/></svg> Favorite ${favorite}</span>
+  </div>`;
+}
+
 function renderCard(review, index) {
   const meta = [review.roaster, review.origin].filter(Boolean).join(" · ") || "Personal tasting";
   const details = [review.process, review.brew].filter(Boolean).join(" · ");
@@ -164,10 +182,8 @@ function renderCard(review, index) {
     </div>
     <div class="card-body">
       <p class="card-meta">${escapeHtml(meta)}</p>
-      <div class="card-title-row">
-        <h3 class="card-title">${escapeHtml(review.name)}</h3>
-        <span class="card-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg>${Number(review.rating).toFixed(1)}</span>
-      </div>
+      <div class="card-title-row"><h3 class="card-title">${escapeHtml(review.name)}</h3></div>
+      ${ratingBadges(review)}
       ${details ? `<p class="card-details">${escapeHtml(details)}</p>` : ""}
       <div class="taste-notes">${review.tastingNotes.map(note => `<span class="taste-tag">${escapeHtml(note)}</span>`).join("")}</div>
       ${review.notes ? `<p class="card-notes">${escapeHtml(review.notes)}</p>` : ""}
@@ -202,7 +218,7 @@ function renderDetail(review) {
     : beanIllustration(review.color || "#d9a56f");
   elements.detailMeta.textContent = meta;
   elements.detailName.textContent = review.name;
-  elements.detailRating.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.7 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.3l6.2-.9L12 2.7Z"/></svg>${Number(review.rating).toFixed(1)}`;
+  elements.detailRatings.innerHTML = ratingBadges(review, "rating-badges");
   elements.detailFacts.innerHTML = facts.map(([label, value]) => `
     <div class="detail-fact">
       <span>${label}</span>
@@ -249,6 +265,7 @@ function render() {
 
   visible.sort((a, b) => {
     if (elements.sortSelect.value === "rating") return b.rating - a.rating;
+    if (elements.sortSelect.value === "favorite") return (b.favoriteRating ?? -1) - (a.favoriteRating ?? -1);
     if (elements.sortSelect.value === "name") return a.name.localeCompare(b.name);
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
@@ -282,7 +299,10 @@ function renderFilters() {
 function openReviewDialog(review = null) {
   editingId = review?.id || null;
   selectedNotes = review ? [...review.tastingNotes] : [];
-  selectedRating = review?.rating || 0;
+  selectedRatings = {
+    taste: review?.rating ? Math.round(Number(review.rating) * 2) / 2 : 0,
+    favorite: review?.favoriteRating ? Math.round(Number(review.favoriteRating) * 2) / 2 : 0
+  };
   currentPhoto = review?.photo || "";
   elements.form.reset();
   elements.dialogTitle.textContent = review ? "Edit this bean" : "Add a new bean";
@@ -294,10 +314,11 @@ function openReviewDialog(review = null) {
   elements.notesInput.value = review?.notes || "";
   elements.notesCount.textContent = elements.notesInput.value.length;
   elements.nameError.textContent = "";
-  elements.ratingError.textContent = "";
+  elements.tasteRatingError.textContent = "";
+  elements.favoriteRatingError.textContent = "";
   updatePhotoPreview();
   renderSelectedNotes();
-  updateRating();
+  updateRatings();
   elements.reviewDialog.showModal();
   setTimeout(() => elements.nameInput.focus(), 120);
 }
@@ -328,12 +349,33 @@ function addCustomNote() {
   elements.customNoteInput.value = "";
 }
 
-function updateRating() {
-  const labels = ["Choose a rating", "Not for me", "It was okay", "Good cup", "Really lovely", "A new favorite"];
-  document.querySelectorAll("#ratingButtons button").forEach(button => {
-    button.classList.toggle("active", Number(button.dataset.rating) <= Math.ceil(selectedRating));
-  });
-  elements.ratingLabel.textContent = selectedRating ? `${Number(selectedRating).toFixed(1)} · ${labels[Math.ceil(selectedRating)]}` : labels[0];
+function makeRatingButtons(kind) {
+  return Array.from({ length: 5 }, (_, index) => {
+    const half = index + 0.5;
+    const full = index + 1;
+    return `<span class="rating-star" data-star="${full}">
+      <svg class="rating-star-outline" viewBox="0 0 24 24" aria-hidden="true"><path d="${starPath}"/></svg>
+      <svg class="rating-star-fill" viewBox="0 0 24 24" aria-hidden="true"><path d="${starPath}"/></svg>
+      <button type="button" data-rating-kind="${kind}" data-rating-value="${half}" aria-label="${kind === "taste" ? "Taste" : "Favorite"} ${half} out of 5"></button>
+      <button type="button" data-rating-kind="${kind}" data-rating-value="${full}" aria-label="${kind === "taste" ? "Taste" : "Favorite"} ${full} out of 5"></button>
+    </span>`;
+  }).join("");
+}
+
+function updateRatings(previewKind = "", previewValue = 0) {
+  for (const kind of ["taste", "favorite"]) {
+    const value = kind === previewKind ? previewValue : selectedRatings[kind];
+    const buttons = kind === "taste" ? elements.tasteRatingButtons : elements.favoriteRatingButtons;
+    const label = kind === "taste" ? elements.tasteRatingLabel : elements.favoriteRatingLabel;
+    buttons.querySelectorAll(".rating-star").forEach((star, index) => {
+      const fill = Math.max(0, Math.min(1, value - index));
+      star.querySelector(".rating-star-fill").style.clipPath = `inset(0 ${100 - fill * 100}% 0 0)`;
+    });
+    buttons.querySelectorAll("button").forEach(button => {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.ratingValue) === selectedRatings[kind]));
+    });
+    label.textContent = value ? `${Number(value).toFixed(1)} / 5` : "Choose a rating";
+  }
 }
 
 function updatePhotoPreview() {
@@ -384,14 +426,19 @@ function submitReview(event) {
   event.preventDefault();
   let valid = true;
   elements.nameError.textContent = "";
-  elements.ratingError.textContent = "";
+  elements.tasteRatingError.textContent = "";
+  elements.favoriteRatingError.textContent = "";
 
   if (!elements.nameInput.value.trim()) {
     elements.nameError.textContent = "Give this bean a name.";
     valid = false;
   }
-  if (!selectedRating) {
-    elements.ratingError.textContent = "Choose a rating before saving.";
+  if (!selectedRatings.taste) {
+    elements.tasteRatingError.textContent = "Choose a taste rating.";
+    valid = false;
+  }
+  if (!selectedRatings.favorite) {
+    elements.favoriteRatingError.textContent = "Choose a favorite rating.";
     valid = false;
   }
   if (!valid) return;
@@ -406,7 +453,8 @@ function submitReview(event) {
     brew: elements.brewInput.value,
     tastingNotes: selectedNotes,
     notes: elements.notesInput.value.trim(),
-    rating: Number(selectedRating),
+    rating: Number(selectedRatings.taste),
+    favoriteRating: Number(selectedRatings.favorite),
     photo: currentPhoto,
     photoPath: currentPhoto ? (existing?.photoPath || "") : "",
     color: existing?.color || ["#d9a56f", "#c98769", "#aab58b", "#d0b875", "#91aca0"][reviews.length % 5],
@@ -521,20 +569,29 @@ elements.selectedNotes.addEventListener("click", event => {
   const button = event.target.closest("[data-remove-note]");
   if (button) toggleNote(button.dataset.removeNote);
 });
-$("#ratingButtons").addEventListener("click", event => {
-  const button = event.target.closest("[data-rating]");
-  if (button) {
-    selectedRating = Number(button.dataset.rating);
-    elements.ratingError.textContent = "";
-    updateRating();
-  }
-});
-$("#ratingButtons").addEventListener("mouseover", event => {
-  const button = event.target.closest("[data-rating]");
-  if (!button) return;
-  document.querySelectorAll("#ratingButtons button").forEach(item => item.classList.toggle("active", Number(item.dataset.rating) <= Number(button.dataset.rating)));
-});
-$("#ratingButtons").addEventListener("mouseleave", updateRating);
+for (const kind of ["taste", "favorite"]) {
+  const buttons = kind === "taste" ? elements.tasteRatingButtons : elements.favoriteRatingButtons;
+  buttons.innerHTML = makeRatingButtons(kind);
+  buttons.addEventListener("click", event => {
+    const button = event.target.closest("[data-rating-value]");
+    if (!button) return;
+    selectedRatings[kind] = Number(button.dataset.ratingValue);
+    (kind === "taste" ? elements.tasteRatingError : elements.favoriteRatingError).textContent = "";
+    updateRatings();
+  });
+  buttons.addEventListener("mouseover", event => {
+    const button = event.target.closest("[data-rating-value]");
+    if (button) updateRatings(kind, Number(button.dataset.ratingValue));
+  });
+  buttons.addEventListener("focusin", event => {
+    const button = event.target.closest("[data-rating-value]");
+    if (button) updateRatings(kind, Number(button.dataset.ratingValue));
+  });
+  buttons.addEventListener("mouseleave", () => updateRatings());
+  buttons.addEventListener("focusout", event => {
+    if (!buttons.contains(event.relatedTarget)) updateRatings();
+  });
+}
 elements.filterRow.addEventListener("click", event => {
   const button = event.target.closest("[data-filter]");
   if (button) { activeFilter = button.dataset.filter; render(); }
