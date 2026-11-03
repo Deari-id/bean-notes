@@ -1,6 +1,4 @@
-const STORAGE_KEY = "bean-notes-coffee-journal-v1";
 const THEME_KEY = "bean-notes-theme";
-const LEGACY_STORAGE_KEY = "steeped-coffee-journal-v2";
 const LEGACY_THEME_KEY = "steeped-theme";
 
 const seedReviews = [
@@ -55,6 +53,11 @@ const seedReviews = [
 ];
 
 let reviews = loadReviews();
+let appReady = Promise.resolve();
+let saveInProgress = false;
+let deleteInProgress = false;
+let journalRevision = 0;
+let journalWrites = Promise.resolve();
 let selectedNotes = [];
 let selectedRatings = { taste: 0, favorite: 0 };
 let currentPhoto = "";
@@ -86,6 +89,8 @@ const elements = {
   reviewDialog: $("#reviewDialog"),
   confirmDialog: $("#confirmDialog"),
   form: $("#reviewForm"),
+  saveButton: $("#saveReviewButton"),
+  confirmDeleteButton: $("#confirmDeleteButton"),
   dialogTitle: $("#dialogTitle"),
   photoInput: $("#photoInput"),
   photoField: $("#photoField"),
@@ -113,21 +118,26 @@ const elements = {
 };
 
 function loadReviews() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (saved && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, saved);
-    return saved ? JSON.parse(saved) : seedReviews;
-  } catch {
-    return seedReviews;
-  }
+  return window.BeanNotesStorage.readLocal() || seedReviews;
 }
 
-function saveReviews() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-  } catch {
-    showToast("Photo is too large to save — try a smaller image");
-  }
+function commitReviews(makeNext, expectedRevision = null) {
+  const operation = journalWrites.then(async () => {
+    await appReady;
+    if (expectedRevision !== null && journalRevision !== expectedRevision) {
+      const error = new Error("Journal changed during cloud sync");
+      error.code = "LOCAL_CHANGED";
+      throw error;
+    }
+    const nextReviews = makeNext(reviews);
+    await window.BeanNotesStorage.save(nextReviews);
+    reviews = nextReviews;
+    journalRevision += 1;
+    render();
+    return nextReviews;
+  });
+  journalWrites = operation.catch(() => {});
+  return operation;
 }
 
 function announceCloudChange() {
@@ -422,8 +432,9 @@ async function handlePhoto(file) {
   }
 }
 
-function submitReview(event) {
+async function submitReview(event) {
   event.preventDefault();
+  if (saveInProgress) return;
   let valid = true;
   elements.nameError.textContent = "";
   elements.tasteRatingError.textContent = "";
@@ -443,6 +454,9 @@ function submitReview(event) {
   }
   if (!valid) return;
 
+  saveInProgress = true;
+  elements.saveButton.disabled = true;
+  await appReady;
   const existing = reviews.find(review => review.id === editingId);
   const review = {
     id: editingId || (crypto.randomUUID ? crypto.randomUUID() : `bean-${Date.now()}`),
@@ -463,12 +477,20 @@ function submitReview(event) {
     sample: false
   };
 
-  reviews = editingId ? reviews.map(item => item.id === editingId ? review : item) : [review, ...reviews];
-  saveReviews();
-  closeReviewDialog();
-  render();
-  announceCloudChange();
-  showToast(editingId ? "Review updated" : "Saved to your journal");
+  try {
+    await commitReviews(current => editingId
+      ? current.map(item => item.id === editingId ? review : item)
+      : [review, ...current]);
+    closeReviewDialog();
+    announceCloudChange();
+    showToast(editingId ? "Review updated" : "Saved to your journal");
+  } catch (error) {
+    console.error("Journal save failed", error);
+    showToast("Could not save on this device. Free storage space or try a smaller photo.");
+  } finally {
+    saveInProgress = false;
+    elements.saveButton.disabled = false;
+  }
 }
 
 function showToast(message) {
@@ -598,18 +620,28 @@ elements.filterRow.addEventListener("click", event => {
 });
 
 $("#keepButton").addEventListener("click", () => elements.confirmDialog.close());
-$("#confirmDeleteButton").addEventListener("click", () => {
+elements.confirmDeleteButton.addEventListener("click", async () => {
+  if (deleteInProgress) return;
+  deleteInProgress = true;
+  elements.confirmDeleteButton.disabled = true;
+  await appReady;
   const review = reviews.find(item => item.id === deletingId);
-  if (review && !review.sample) {
-    window.dispatchEvent(new CustomEvent("bean-notes:review-deleted", {
-      detail: { id: review.id, photoPath: review.photoPath || "" }
-    }));
+  try {
+    await commitReviews(current => current.filter(item => item.id !== deletingId));
+    if (review && !review.sample) {
+      window.dispatchEvent(new CustomEvent("bean-notes:review-deleted", {
+        detail: { id: review.id, photoPath: review.photoPath || "" }
+      }));
+    }
+    elements.confirmDialog.close();
+    showToast("Bean removed");
+  } catch (error) {
+    console.error("Journal delete failed", error);
+    showToast("Could not remove this bean because changes could not be saved.");
+  } finally {
+    deleteInProgress = false;
+    elements.confirmDeleteButton.disabled = false;
   }
-  reviews = reviews.filter(review => review.id !== deletingId);
-  saveReviews();
-  elements.confirmDialog.close();
-  render();
-  showToast("Bean removed");
 });
 
 elements.reviewDialog.addEventListener("click", event => {
@@ -621,21 +653,33 @@ elements.confirmDialog.addEventListener("click", event => {
 
 $("#themeToggle").addEventListener("click", () => {
   document.body.classList.toggle("dark");
-  localStorage.setItem(THEME_KEY, document.body.classList.contains("dark") ? "dark" : "light");
+  try {
+    localStorage.setItem(THEME_KEY, document.body.classList.contains("dark") ? "dark" : "light");
+  } catch {
+    showToast("Theme preference could not be saved on this device");
+  }
 });
 
-const savedTheme = localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
+let savedTheme;
+try {
+  savedTheme = localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
+} catch {
+  savedTheme = null;
+}
 if (savedTheme === "dark") document.body.classList.add("dark");
+$("#localFileWarning").hidden = location.protocol !== "file:";
 window.addEventListener("hashchange", () => renderRoute({ moveFocus: true }));
 render();
+appReady = window.BeanNotesStorage.load(reviews).then(storedReviews => {
+  reviews = storedReviews;
+  render();
+});
 
 window.BeanNotesApp = {
+  ready: appReady,
+  getRevision: () => journalRevision,
   getReviews: () => reviews.map(review => ({ ...review, tastingNotes: [...review.tastingNotes] })),
-  replaceReviews: nextReviews => {
-    reviews = nextReviews;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-    render();
-  },
+  replaceReviews: (nextReviews, expectedRevision) => commitReviews(() => nextReviews, expectedRevision),
   showToast
 };
 

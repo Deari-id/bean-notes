@@ -152,6 +152,7 @@ async function processDeletions() {
 }
 
 async function syncNow({ quiet = false } = {}) {
+  await app.ready;
   if (!client || !currentUser || syncInProgress || !navigator.onLine) return;
   syncInProgress = true;
   setStatus("syncing", "Syncing…");
@@ -159,6 +160,7 @@ async function syncNow({ quiet = false } = {}) {
 
   try {
     await processDeletions();
+    const localRevision = app.getRevision();
     const localReviews = app.getReviews();
     const localPersonal = localReviews.filter(review => !review.sample);
 
@@ -216,13 +218,17 @@ async function syncNow({ quiet = false } = {}) {
     }
 
     const samples = localReviews.filter(review => review.sample);
-    app.replaceReviews([...merged, ...samples]);
+    await app.replaceReviews([...merged, ...samples], localRevision);
     const syncedAt = new Date().toISOString();
     localStorage.setItem(LAST_SYNC_KEY, syncedAt);
     updateLastSynced();
     setStatus("synced", "Up to date");
     if (!quiet) app.showToast("Journal synced across your devices");
   } catch (error) {
+    if (error.code === "LOCAL_CHANGED") {
+      scheduleSync();
+      return;
+    }
     console.error("Bean Notes sync failed", error);
     setStatus("error", "Sync needs attention");
     const message = /favorite_rating/i.test(error.message || "")

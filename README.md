@@ -12,7 +12,7 @@ python3 -m http.server 4173
 
 Then visit `http://localhost:4173`.
 
-Opening `index.html` directly still works, but installation and offline caching require HTTP locally or HTTPS when published.
+Opening `index.html` directly still works for a quick preview, but `file://` browser storage may not survive reopening the file. Use the published HTTPS app for your real journal. Installation and offline caching also require HTTP locally or HTTPS when published.
 
 ## Install on iPhone
 
@@ -21,7 +21,7 @@ Opening `index.html` directly still works, but installation and offline caching 
 3. Tap **Share**, then **Add to Home Screen**.
 4. Turn on **Open as Web App**, then tap **Add**.
 
-The app shell works offline after the first successful visit. By default, reviews and the selected theme are stored in the browser's local storage on the current device. Reviews can synchronize between devices after the optional cloud connection below is configured. The three initial reviews are sample entries and can be edited or removed.
+The app shell works offline after the first successful visit. Reviews and photos are stored primarily in IndexedDB on the current device, with a `localStorage` fallback and migration of existing reviews. A save is confirmed only after storage commits. The selected theme remains in `localStorage`. Reviews can synchronize between devices after the optional cloud connection below is configured. The three initial reviews are sample entries and can be edited or removed.
 
 ## Optional cloud synchronization
 

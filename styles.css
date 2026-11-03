@@ -74,6 +74,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   border-bottom: 1px solid var(--line);
 }
 
+.local-file-warning {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--orange);
+  border-radius: 12px;
+  background: var(--orange-soft);
+  line-height: 1.5;
+}
+.local-file-warning a { color: var(--ink); font-weight: 700; }
+
 .brand {
   display: inline-flex;
   align-items: center;
