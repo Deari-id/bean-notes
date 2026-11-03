@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=10" />
+    <link rel="stylesheet" href="styles.css?v=11" />
   </head>
   <body>
     <div class="app-shell">
@@ -38,6 +38,11 @@
           </button>
         </nav>
       </header>
+
+      <p class="local-file-warning" id="localFileWarning" hidden>
+        You are using a local file. Browser storage for <code>file://</code> pages may disappear between sessions.
+        For reliable saving and cloud sync, open the <a href="https://deari-id.github.io/bean-notes/">published Bean Notes app</a>.
+      </p>
 
       <main>
         <div id="homeView">
@@ -256,7 +261,7 @@
 
         <div class="dialog-footer">
           <button class="button button-secondary" id="cancelButton" type="button">Cancel</button>
-          <button class="button button-primary" type="submit">Save to journal</button>
+          <button class="button button-primary" id="saveReviewButton" type="submit">Save to journal</button>
         </div>
       </form>
     </dialog>
@@ -347,7 +352,8 @@
     </div>
 
     <script src="cloud-config.js?v=3"></script>
-    <script src="app.js?v=10"></script>
-    <script type="module" src="cloud.js?v=10"></script>
+    <script src="journal-storage.js?v=1"></script>
+    <script src="app.js?v=11"></script>
+    <script type="module" src="cloud.js?v=11"></script>
   </body>
 </html>
