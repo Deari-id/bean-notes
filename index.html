@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=11" />
+    <link rel="stylesheet" href="styles.css?v=12" />
   </head>
   <body>
     <div class="app-shell">
@@ -307,16 +307,21 @@
             <svg viewBox="0 0 48 48"><path d="M14 36h20a9 9 0 0 0 1.3-17.9A12 12 0 0 0 12.5 15 8.5 8.5 0 0 0 14 36Z"/><path d="m20 26 4 4 6-7"/></svg>
           </div>
           <h3>Take your journal everywhere</h3>
-          <p>Enter your email and we’ll send a secure sign-in link. No password needed.</p>
+          <p>Sign in here to back up the beans saved in this app.</p>
           <form class="cloud-form" id="cloudSignInForm">
             <label class="form-field">
               <span>Email address</span>
               <input id="cloudEmailInput" type="email" placeholder="you@example.com" autocomplete="email" required />
             </label>
-            <button class="button button-primary" id="cloudEmailButton" type="submit">Email me a sign-in link</button>
+            <label class="form-field">
+              <span>Password</span>
+              <input id="cloudPasswordInput" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="button button-primary" id="cloudEmailButton" type="submit">Sign in on this device</button>
           </form>
+          <button class="text-button" id="cloudMagicLinkButton" type="button">First time or forgot your password? Email a sign-in link</button>
           <p class="cloud-message" id="cloudAuthMessage" aria-live="polite"></p>
-          <p class="cloud-help">If sign-in fails, check the Supabase publishable key and open the published app in Safari or Chrome.</p>
+          <p class="cloud-help">On iPhone, email links may open Safari. After signing in there, open Cloud sync and set a password. Then use that password in Bean Notes from your Home Screen.</p>
         </section>
 
         <section class="cloud-state" id="cloudSignedInState" hidden>
@@ -341,6 +346,22 @@
             </div>
           </div>
           <button class="button button-primary cloud-sync-now" id="cloudSyncNowButton" type="button">Sync now</button>
+          <details class="cloud-password-settings" id="cloudPasswordSettings">
+            <summary>Set a password for Home Screen login</summary>
+            <p>Use this password to sign in directly in Bean Notes on your other devices.</p>
+            <form class="cloud-form" id="cloudSetPasswordForm">
+              <label class="form-field">
+                <span>New password</span>
+                <input id="cloudNewPasswordInput" type="password" autocomplete="new-password" minlength="8" required />
+              </label>
+              <label class="form-field">
+                <span>Confirm new password</span>
+                <input id="cloudConfirmPasswordInput" type="password" autocomplete="new-password" minlength="8" required />
+              </label>
+              <button class="button button-secondary" id="cloudSetPasswordButton" type="submit">Save password</button>
+            </form>
+            <p class="cloud-message" id="cloudPasswordMessage" aria-live="polite"></p>
+          </details>
           <button class="text-button" id="cloudSignOutButton" type="button">Sign out on this device</button>
         </section>
       </div>
@@ -354,6 +375,6 @@
     <script src="cloud-config.js?v=3"></script>
     <script src="journal-storage.js?v=1"></script>
     <script src="app.js?v=11"></script>
-    <script type="module" src="cloud.js?v=11"></script>
+    <script type="module" src="cloud.js?v=12"></script>
   </body>
 </html>

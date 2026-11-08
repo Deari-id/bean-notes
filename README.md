@@ -38,3 +38,13 @@ The publishable key is designed for frontend use when Row Level Security is enab
 If the Supabase table already exists, run `supabase/migrations/20261026_dual_ratings.sql` in the SQL Editor before publishing the dual-rating app. Older reviews retain their Taste score and show Favorite as unrated until you edit them.
 
 Sign-in links need the published HTTPS app, not a local `file://` copy. If you see “Load failed”, first verify that `cloud-config.js` contains the current Supabase publishable key, then open the published app in Safari or Chrome and try again. If the request succeeds but no email arrives, check the Supabase Auth email settings and spam folder; Supabase's default email service has recipient and rate limits, so a custom SMTP service may be needed.
+
+### Sign in from the iPhone Home Screen
+
+Safari and a Home Screen web app can have separate sign-in sessions. Bean Notes supports email/password sign-in directly inside the app. If your account previously used only email links:
+
+1. Request an email link using **First time or forgot your password?** in Cloud sync.
+2. Open the link in Safari, then open **Cloud sync → Set a password for Home Screen login**.
+3. Set your password, return to Bean Notes from the Home Screen, and sign in with the same email and password.
+
+Password fields are sent only to Supabase Auth and are never written to the journal's local storage. Existing browser sessions and email-link login remain supported. The email provider must be enabled in Supabase Auth; no email-template or database-schema change is required for this flow.

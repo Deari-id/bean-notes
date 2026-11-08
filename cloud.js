@@ -13,8 +13,16 @@ const ui = {
   signedIn: document.querySelector("#cloudSignedInState"),
   form: document.querySelector("#cloudSignInForm"),
   email: document.querySelector("#cloudEmailInput"),
+  password: document.querySelector("#cloudPasswordInput"),
   emailButton: document.querySelector("#cloudEmailButton"),
+  magicLinkButton: document.querySelector("#cloudMagicLinkButton"),
   authMessage: document.querySelector("#cloudAuthMessage"),
+  passwordSettings: document.querySelector("#cloudPasswordSettings"),
+  setPasswordForm: document.querySelector("#cloudSetPasswordForm"),
+  newPassword: document.querySelector("#cloudNewPasswordInput"),
+  confirmPassword: document.querySelector("#cloudConfirmPasswordInput"),
+  setPasswordButton: document.querySelector("#cloudSetPasswordButton"),
+  passwordMessage: document.querySelector("#cloudPasswordMessage"),
   accountEmail: document.querySelector("#cloudAccountEmail"),
   status: document.querySelector("#cloudStatusText"),
   lastSynced: document.querySelector("#cloudLastSynced"),
@@ -26,6 +34,18 @@ let client = null;
 let currentUser = null;
 let syncInProgress = false;
 let syncTimer = null;
+let showPasswordSetup = /(?:^#|&)access_token=/.test(location.hash) || new URLSearchParams(location.search).has("code");
+
+function authErrorMessage(error, fallback) {
+  const message = error.message || "";
+  if (/invalid_credentials|invalid.login.credentials/i.test(error.code || "") || /invalid login credentials/i.test(message)) {
+    return "Email or password is incorrect. If you used email links before, open one in Safari and set a password in Cloud sync first.";
+  }
+  if (/invalid api key|unauthorized_invalid_api_key/i.test(message)) return "Cloud connection needs attention. Your beans remain saved on this device.";
+  if (/load failed|failed to fetch|network|fetch failed/i.test(message)) return "Could not reach the cloud. Check your connection and try again.";
+  if (/rate.limit|too many requests|email rate/i.test(message)) return "Too many attempts. Please wait a little before trying again.";
+  return message || fallback;
+}
 
 function isConfigured() {
   return /^https:\/\//.test(config.url || "") && (config.publishableKey || "").length > 20;
@@ -262,6 +282,7 @@ async function initializeCloud() {
     const { data } = await client.auth.getSession();
     currentUser = data.session?.user || null;
     renderAccountState();
+    if (currentUser) scheduleSync();
 
     client.auth.onAuthStateChange((_event, session) => {
       currentUser = session?.user || null;
@@ -277,6 +298,9 @@ async function initializeCloud() {
 
 function renderAccountState() {
   if (!currentUser) {
+    ui.newPassword.value = "";
+    ui.confirmPassword.value = "";
+    ui.passwordSettings.open = false;
     showCloudState("signed-out");
     setStatus("ready");
     return;
@@ -284,7 +308,13 @@ function renderAccountState() {
   showCloudState("signed-in");
   ui.accountEmail.textContent = currentUser.email || "Signed-in account";
   updateLastSynced();
-  setStatus("synced", "Ready to sync");
+  setStatus("ready", "Ready to sync");
+  if (showPasswordSetup) {
+    showPasswordSetup = false;
+    ui.passwordSettings.open = true;
+    ui.passwordMessage.textContent = "You’re signed in here. Set a password, then use it in Bean Notes from your Home Screen.";
+    if (!ui.dialog.open) ui.dialog.showModal();
+  }
 }
 
 ui.button.addEventListener("click", () => ui.dialog.showModal());
@@ -295,31 +325,71 @@ ui.form.addEventListener("submit", async event => {
   event.preventDefault();
   if (!client) return;
   ui.emailButton.disabled = true;
-  ui.authMessage.textContent = "Sending your secure link…";
+  ui.authMessage.textContent = "Signing in on this device…";
   try {
     if (location.protocol === "file:") {
-      ui.authMessage.textContent = "Sign-in links require the published HTTPS app. Open Bean Notes in Safari or Chrome, then try again.";
+      ui.authMessage.textContent = "Open the published HTTPS Bean Notes app to connect cloud sync.";
       return;
     }
-    const redirectTo = `${location.origin}${location.pathname}`;
-    const { error } = await client.auth.signInWithOtp({
+    const { data, error } = await client.auth.signInWithPassword({
       email: ui.email.value.trim(),
-      options: { emailRedirectTo: redirectTo }
+      password: ui.password.value
     });
     if (error) throw error;
-    ui.authMessage.textContent = "Check your email, then open the sign-in link on this device.";
+    if (!data.session) throw new Error("Sign-in did not create a session. Please try again.");
+    currentUser = data.session.user;
+    ui.password.value = "";
+    ui.authMessage.textContent = "";
+    renderAccountState();
+    scheduleSync();
   } catch (error) {
-    console.error("Bean Notes sign-in failed", error);
-    const message = error.message || "";
-    ui.authMessage.textContent = /invalid api key|unauthorized_invalid_api_key/i.test(message)
-      ? "Cloud setup needs a valid Supabase publishable key. Your reviews remain saved on this device."
-      : /load failed|failed to fetch|network|fetch failed/i.test(message)
-        ? "The browser could not reach Supabase. Open the published app in Safari or Chrome, check your connection, and try again."
-        : /rate.limit|too many requests|email rate/i.test(message)
-          ? "Too many sign-in attempts. Please wait a little before trying again."
-          : message || "Could not send the sign-in link. Please try again.";
+    ui.authMessage.textContent = authErrorMessage(error, "Could not sign in. Please try again.");
   } finally {
     ui.emailButton.disabled = false;
+  }
+});
+
+ui.magicLinkButton.addEventListener("click", async () => {
+  if (!client || !ui.email.reportValidity()) return;
+  ui.magicLinkButton.disabled = true;
+  ui.authMessage.textContent = "Sending your sign-in link…";
+  try {
+    if (location.protocol === "file:") throw new Error("Open the published HTTPS Bean Notes app to request a sign-in link.");
+    const { error } = await client.auth.signInWithOtp({
+      email: ui.email.value.trim(),
+      options: { emailRedirectTo: `${location.origin}${location.pathname}` }
+    });
+    if (error) throw error;
+    ui.authMessage.textContent = "Open the email link in Safari. Then open Cloud sync → Set a password for Home Screen login. Return to your Home Screen app and sign in with that password.";
+  } catch (error) {
+    ui.authMessage.textContent = authErrorMessage(error, "Could not send the sign-in link. Please try again.");
+  } finally {
+    ui.magicLinkButton.disabled = false;
+  }
+});
+
+ui.setPasswordForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!client || !currentUser) return;
+  if (ui.newPassword.value.length < 8) {
+    ui.passwordMessage.textContent = "Use at least 8 characters for your password.";
+    return;
+  }
+  if (ui.newPassword.value !== ui.confirmPassword.value) {
+    ui.passwordMessage.textContent = "The passwords do not match.";
+    return;
+  }
+  ui.setPasswordButton.disabled = true;
+  ui.passwordMessage.textContent = "Saving your password…";
+  try {
+    const { error } = await client.auth.updateUser({ password: ui.newPassword.value });
+    if (error) throw error;
+    ui.setPasswordForm.reset();
+    ui.passwordMessage.textContent = "Password saved. Open Bean Notes from your Home Screen and sign in with the same email and this password.";
+  } catch (error) {
+    ui.passwordMessage.textContent = authErrorMessage(error, "Could not save the password. Please try again.");
+  } finally {
+    ui.setPasswordButton.disabled = false;
   }
 });
 
