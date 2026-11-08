@@ -569,6 +569,9 @@ body.dark .suggested-notes button.selected { color: #18211c; }
 .cloud-form .button { width: 100%; }
 .cloud-message { min-height: 18px; margin: 12px 0 0 !important; color: var(--orange) !important; }
 .cloud-help { margin-bottom: 0 !important; font-size: 11px !important; }
+.cloud-password-settings { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); text-align: left; }
+.cloud-password-settings summary { cursor: pointer; font-size: 13px; font-weight: 700; }
+.cloud-password-settings > p { margin-top: 12px; font-size: 13px; }
 .account-card {
   display: flex;
   align-items: center;
