@@ -50,7 +50,7 @@
           <div class="hero-copy">
             <p class="eyebrow"><span></span> Your coffee archive</p>
             <h1 id="pageTitle">Every bean has<br /><em>a story.</em></h1>
-            <p class="hero-description">Keep the bags you loved, the flavors you found, and the brews worth making again.</p>
+            <p class="hero-description">Keep the coffees you loved, the flavors you found, and the brews worth making again.</p>
           </div>
           <aside class="hero-quote" aria-label="Journal note">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17h3l2-5V7H6v5h3l-2 5Zm9 0h3l2-5V7h-6v5h3l-2 5Z"/></svg>
@@ -95,7 +95,7 @@
               <svg viewBox="0 0 120 120"><path d="M36 30h46l-4 65H40l-4-65Z"/><path d="M32 30h54M45 46c7 5 20 5 28 0M55 61c7-5 16 2 12 10-4 8-15 13-18 5-2-5 2-11 6-15Z"/></svg>
             </div>
             <h3 id="emptyTitle">Your journal is waiting</h3>
-            <p id="emptyMessage">Add the first bag you want to remember.</p>
+            <p id="emptyMessage">Add the first coffee you want to remember.</p>
             <button class="button button-primary" id="emptyAddButton" type="button">Add your first bean</button>
           </div>
         </section>
@@ -160,10 +160,10 @@
             <input id="photoInput" type="file" accept="image/*" />
             <div class="photo-placeholder" id="photoPlaceholder">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m5 17 4-4 3 3 2-2 5 3"/></svg>
-              <span>Add a photo of the bag</span>
+              <span>Add a photo of the drink, bag or box</span>
               <small>JPG, PNG or WebP · max 4 MB</small>
             </div>
-            <img id="photoPreview" alt="Coffee bag preview" hidden />
+            <img id="photoPreview" alt="Coffee photo preview" hidden />
             <div class="photo-actions" id="photoActions" hidden>
               <button type="button" id="changePhotoButton">Change</button>
               <button type="button" id="removePhotoButton">Remove</button>
@@ -208,6 +208,10 @@
                 <option>Cold brew</option>
                 <option>Other</option>
               </select>
+            </label>
+            <label class="form-field form-field-wide">
+              <span>Café / Restaurant <small>(optional)</small></span>
+              <input id="venueInput" name="venue" type="text" placeholder="e.g. Common Grounds, Jakarta" maxlength="120" />
             </label>
           </div>
 
@@ -374,7 +378,7 @@
 
     <script src="cloud-config.js?v=3"></script>
     <script src="journal-storage.js?v=1"></script>
-    <script src="app.js?v=11"></script>
-    <script type="module" src="cloud.js?v=12"></script>
+    <script src="app.js?v=12"></script>
+    <script type="module" src="cloud.js?v=13"></script>
   </body>
 </html>
