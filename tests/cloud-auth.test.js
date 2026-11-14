@@ -89,3 +89,20 @@ test("returning from an email link opens password setup for the signed-in accoun
   assert.equal(page.element("#cloudPasswordSettings").open, true);
   assert.match(page.element("#cloudPasswordMessage").textContent, /Home Screen/);
 });
+
+test("the café name survives cloud upload and download", () => {
+  const page = setup({});
+  const venue = "Common Grounds, Jakarta";
+  page.context.review = { id: "review", name: "Coffee", venue, rating: 4.5 };
+  const row = vm.runInContext('toCloudRow(review, "user")', page.context);
+  assert.equal(row.venue, venue);
+  page.context.row = row;
+  assert.equal(vm.runInContext("fromCloudRow(row).venue", page.context), venue);
+});
+
+test("reviews without a café name remain compatible with cloud sync", () => {
+  const page = setup({});
+  page.context.review = { id: "old-review", name: "Coffee", rating: 4 };
+  assert.equal(vm.runInContext('toCloudRow(review, "user").venue', page.context), "");
+  assert.equal(vm.runInContext("fromCloudRow({ rating: 4 }).venue", page.context), "");
+});

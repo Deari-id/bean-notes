@@ -7,6 +7,7 @@ create table if not exists public.coffee_reviews (
   name text not null check (char_length(name) between 1 and 70),
   roaster text not null default '',
   origin text not null default '',
+  venue text not null default '',
   process text not null default '',
   brew text not null default '',
   tasting_notes text[] not null default '{}',

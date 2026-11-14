@@ -100,6 +100,7 @@ const elements = {
   nameInput: $("#nameInput"),
   roasterInput: $("#roasterInput"),
   originInput: $("#originInput"),
+  venueInput: $("#venueInput"),
   processInput: $("#processInput"),
   brewInput: $("#brewInput"),
   customNoteInput: $("#customNoteInput"),
@@ -176,7 +177,7 @@ function renderCard(review, index) {
   const details = [review.process, review.brew].filter(Boolean).join(" · ");
   const date = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(review.createdAt));
   const photo = review.photo
-    ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee bag" />`
+    ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee photo" />`
     : beanIllustration(review.color || "#d9a56f");
 
   return `<article class="bean-card" data-id="${escapeHtml(review.id)}" tabindex="0" role="link" aria-label="Open review for ${escapeHtml(review.name)}" style="animation-delay:${index * 50}ms">
@@ -221,10 +222,11 @@ function renderDetail(review) {
     ["Process", review.process],
     ["Brew method", review.brew]
   ];
+  if (review.venue) facts.push(["Enjoyed at", review.venue]);
   const tasted = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(review.createdAt));
 
   elements.detailMedia.innerHTML = review.photo
-    ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee bag" />`
+    ? `<img src="${review.photo}" alt="${escapeHtml(review.name)} coffee photo" />`
     : beanIllustration(review.color || "#d9a56f");
   elements.detailMeta.textContent = meta;
   elements.detailName.textContent = review.name;
@@ -267,7 +269,7 @@ function renderRoute({ moveFocus = false } = {}) {
 function render() {
   const query = elements.searchInput.value.trim().toLowerCase();
   let visible = reviews.filter(review => {
-    const searchable = [review.name, review.roaster, review.origin, review.process, review.brew, review.notes, ...review.tastingNotes].join(" ").toLowerCase();
+    const searchable = [review.name, review.roaster, review.origin, review.venue, review.process, review.brew, review.notes, ...review.tastingNotes].join(" ").toLowerCase();
     const matchesSearch = !query || searchable.includes(query);
     const matchesFilter = activeFilter === "all" || review.tastingNotes.some(note => note.toLowerCase() === activeFilter.toLowerCase());
     return matchesSearch && matchesFilter;
@@ -287,7 +289,7 @@ function render() {
 
   if (reviews.length === 0) {
     elements.emptyTitle.textContent = "Your journal is waiting";
-    elements.emptyMessage.textContent = "Add the first bag you want to remember.";
+    elements.emptyMessage.textContent = "Add the first coffee you want to remember.";
   } else {
     elements.emptyTitle.textContent = "No beans found";
     elements.emptyMessage.textContent = "Try another search or tasting-note filter.";
@@ -319,6 +321,7 @@ function openReviewDialog(review = null) {
   elements.nameInput.value = review?.name || "";
   elements.roasterInput.value = review?.roaster || "";
   elements.originInput.value = review?.origin || "";
+  elements.venueInput.value = review?.venue || "";
   elements.processInput.value = review?.process || "";
   elements.brewInput.value = review?.brew || "";
   elements.notesInput.value = review?.notes || "";
@@ -463,6 +466,7 @@ async function submitReview(event) {
     name: elements.nameInput.value.trim(),
     roaster: elements.roasterInput.value.trim(),
     origin: elements.originInput.value.trim(),
+    venue: elements.venueInput.value.trim(),
     process: elements.processInput.value,
     brew: elements.brewInput.value,
     tastingNotes: selectedNotes,
